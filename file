@@ -1,0 +1,73 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Student {
+    int id; char name[50]; struct Student *next;
+} Student;
+
+typedef struct Course {
+    char code[20];
+    Student *students;
+    struct Course *next;
+} Course;
+
+Course* find_course(Course *head, char *code){
+    Course *c=head; while(c){ if(strcmp(c->code,code)==0) return c; c=c->next; } return NULL;
+}
+Course* add_course(Course *head, char *code){
+    if(find_course(head,code)) return head;
+    Course *c = malloc(sizeof(Course));
+    strcpy(c->code,code); c->students=NULL; c->next=head; return c;
+}
+void add_student_to_course(Course *head, char *code, int id, char *name){
+    Course *c = find_course(head,code);
+    if(!c){ printf("Course not found, creating.\n"); head = add_course(head,code); c=find_course(head,code); }
+    Student *s = malloc(sizeof(Student)); s->id=id; strcpy(s->name,name); s->next=NULL;
+    if(!c->students) c->students = s;
+    else { Student *t=c->students; while(t->next) t=t->next; t->next=s; }
+}
+
+void drop_student(Course *head, char *code, int id){
+    Course *c=find_course(head,code); if(!c){ printf("No such course\n"); return; }
+    Student *t=c->students,*prev=NULL;
+    while(t && t->id!=id){ prev=t; t=t->next; }
+    if(!t){ printf("Student not found\n"); return; }
+    if(!prev) c->students = t->next; else prev->next = t->next;
+    free(t); printf("Dropped\n");
+}
+
+void display_students(Course *head, char *code){
+    Course *c = find_course(head,code); if(!c){ printf("No such course\n"); return; }
+    Student *t=c->students;
+    printf("Students in %s:\nID\tName\n",code);
+    while(t){ printf("%d\t%s\n",t->id,t->name); t=t->next; }
+}
+
+int count_students(Course *head, char *code){
+    Course *c=find_course(head,code); if(!c) return 0; int cnt=0; Student *t=c->students; while(t){ cnt++; t=t->next; } return cnt;
+}
+
+Student* clone_students(Student *head){
+    if(!head) return NULL;
+    Student *nh=NULL,*tail=NULL,*t=head;
+    while(t){ Student *n=malloc(sizeof(Student)); *n=*t; n->next=NULL;
+        if(!nh) nh=tail=n; else { tail->next=n; tail=n; } t=t->next;
+    }
+    return nh;
+}
+
+int main(){
+    Course *courses=NULL; int ch;
+    while(1){
+        printf("\n1.Add course 2.Add student 3.Drop student 4.Display students 5.Count 6.Clone course 7.Exit\nChoice: "); if(scanf("%d",&ch)!=1) break;
+        if(ch==1){ char code[20]; printf("Course code: "); scanf("%19s",code); courses = add_course(courses,code); }
+        else if(ch==2){ char code[20], name[50]; int id; printf("Course ID name: "); scanf("%19s %d %49s",code,&id,name); add_student_to_course(courses,code,id,name); }
+        else if(ch==3){ char code[20]; int id; printf("Course id: "); scanf("%19s %d",code,&id); drop_student(courses,code,id); }
+        else if(ch==4){ char code[20]; printf("Course: "); scanf("%19s",code); display_students(courses,code); }
+        else if(ch==5){ char code[20]; printf("Course: "); scanf("%19s",code); printf("Count: %d\n", count_students(courses,code)); }
+        else if(ch==6){ char code[20]; printf("Course to clone: "); scanf("%19s",code); Course *c=find_course(courses,code); if(!c) printf("No course\n"); else{ Student *cl = clone_students(c->students); printf("Cloned students:\n"); Student *t=cl; while(t){ printf("%d %s\n",t->id,t->name); t=t->next; } /* free clone */ while(cl){ Student *tmp=cl; cl=cl->next; free(tmp);} } }
+        else break;
+    }
+    printf("Exit\n"); return 0;
+}
